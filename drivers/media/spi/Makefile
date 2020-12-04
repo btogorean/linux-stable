@@ -1,3 +1,4 @@
+obj-$(CONFIG_VIDEO_ADDICMOS) += addicmos.o
 obj-$(CONFIG_VIDEO_GS1662) += gs1662.o
 obj-$(CONFIG_CXD2880_SPI_DRV) += cxd2880-spi.o
 

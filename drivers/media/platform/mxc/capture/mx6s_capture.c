@@ -138,6 +138,7 @@
 #define BIT_CSI_ENABLE			(0x1 << 31)
 #define BIT_MIPI_DATA_FORMAT_RAW8		(0x2a << 25)
 #define BIT_MIPI_DATA_FORMAT_RAW10		(0x2b << 25)
+#define BIT_MIPI_DATA_FORMAT_RAW12		(0x2c << 25)
 #define BIT_MIPI_DATA_FORMAT_YUV422_8B	(0x1e << 25)
 #define BIT_MIPI_DATA_FORMAT_MASK	(0x3F << 25)
 #define BIT_MIPI_DATA_FORMAT_OFFSET	25
@@ -273,6 +274,12 @@ static struct mx6s_fmt formats[] = {
 		.pixelformat	= V4L2_PIX_FMT_SBGGR8,
 		.mbus_code	= MEDIA_BUS_FMT_SBGGR8_1X8,
 		.bpp		= 1,
+	}, {
+		.name		= "RAWRGB12 (SBGGR12)",
+		.fourcc		= V4L2_PIX_FMT_SBGGR12,
+		.pixelformat	= V4L2_PIX_FMT_SBGGR12,
+		.mbus_code	= MEDIA_BUS_FMT_SBGGR12_1X12,
+		.bpp		= 2,
 	}
 };
 
@@ -756,6 +763,8 @@ static int mx6s_csi_enable(struct mx6s_csi_dev *csi_dev)
 
 	if (pix->field == V4L2_FIELD_INTERLACED)
 		csi_tvdec_enable(csi_dev, true);
+	else
+		csi_tvdec_enable(csi_dev, false);
 
 	/* For mipi csi input only */
 	if (csi_dev->csi_mipi_mode == true) {
@@ -844,6 +853,7 @@ static int mx6s_configure_csi(struct mx6s_csi_dev *csi_dev)
 	switch (csi_dev->fmt->pixelformat) {
 	case V4L2_PIX_FMT_YUV32:
 	case V4L2_PIX_FMT_SBGGR8:
+	case V4L2_PIX_FMT_SBGGR12:
 		width = pix->width;
 		break;
 	case V4L2_PIX_FMT_UYVY:
@@ -876,6 +886,9 @@ static int mx6s_configure_csi(struct mx6s_csi_dev *csi_dev)
 			break;
 		case V4L2_PIX_FMT_SBGGR8:
 			cr18 |= BIT_MIPI_DATA_FORMAT_RAW8;
+			break;
+		case V4L2_PIX_FMT_SBGGR12:
+			cr18 |= BIT_MIPI_DATA_FORMAT_RAW12;
 			break;
 		default:
 			pr_debug("   fmt not supported\n");
@@ -1476,6 +1489,7 @@ static int mx6s_vidioc_s_fmt_vid_cap(struct file *file, void *priv,
 	csi_dev->pix.width     = f->fmt.pix.width;
 	csi_dev->pix.height    = f->fmt.pix.height;
 	csi_dev->pix.sizeimage = f->fmt.pix.sizeimage;
+	csi_dev->pix.bytesperline = f->fmt.pix.bytesperline;
 	csi_dev->pix.field     = f->fmt.pix.field;
 	csi_dev->type          = f->type;
 	dev_dbg(csi_dev->dev, "set to pixelformat '%4.6s'\n",
@@ -1637,8 +1651,15 @@ static int mx6s_vidioc_enum_framesizes(struct file *file, void *priv,
 	int ret;
 
 	fmt = format_by_fourcc(fsize->pixel_format);
-	if (fmt->pixelformat != fsize->pixel_format)
+	if (!fmt) {
+		dev_err(csi_dev->dev, "Fourcc format (0x%08x) invalid.",
+			fsize->pixel_format);
 		return -EINVAL;
+	} else {
+		if (fmt->pixelformat != fsize->pixel_format)
+			return -EINVAL;
+	}
+
 	fse.code = fmt->mbus_code;
 
 	ret = v4l2_subdev_call(sd, pad, enum_frame_size, NULL, &fse);
@@ -1679,8 +1700,15 @@ static int mx6s_vidioc_enum_frameintervals(struct file *file, void *priv,
 	int ret;
 
 	fmt = format_by_fourcc(interval->pixel_format);
-	if (fmt->pixelformat != interval->pixel_format)
-		return -EINVAL;
+	if (!fmt) {
+		dev_err(csi_dev->dev, "Fourcc format (0x%08x) invalid.",
+			interval->pixel_format);
+		 return -EINVAL;
+	} else {
+		if (fmt->pixelformat != interval->pixel_format)
+			return -EINVAL;
+	}
+
 	fie.code = fmt->mbus_code;
 
 	ret = v4l2_subdev_call(sd, pad, enum_frame_interval, NULL, &fie);

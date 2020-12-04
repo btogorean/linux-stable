@@ -75,22 +75,29 @@
 	};
 
 	sound-wm8904 {
-                compatible = "fsl,imx-audio-wm8904";
-                model = "wm8904-audio";
-                audio-cpu = <&sai2>;
-                audio-codec = <&wm8904>;
-                audio-routing =
-                        "Line Out Jack Left", "HPOUTL",
-                        "Line In Jack Right", "HPOUTR",
-                        "Micbias", "MICBIAS",
-                        "Mic in", "IN2R";
-        };
+		compatible = "fsl,imx-audio-wm8904";
+		model = "wm8904-audio";
+		audio-cpu = <&sai2>;
+		audio-codec = <&wm8904>;
+		audio-routing =
+			"Line Out Jack Left", "HPOUTL",
+			"Line In Jack Right", "HPOUTR",
+			"Micbias", "MICBIAS",
+			"Mic in", "IN2R";
+	};
 
 	xclk: clock {
-                compatible = "fixed-clock";
-                #clock-cells = <0>;
-                clock-frequency = <25000000>;
-        };
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <25000000>;
+	};
+
+	gpio_init {
+		compatible = "gpio-keys";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_gpios>;
+	};
+
 };
 
 &mipi_csi_1 {
@@ -111,8 +118,7 @@
                          */
                         data-lanes = <4>;
                         clock-lanes = <0>;
-                        link-frequencies = /bits/ 64 <248000000>;
-			status= "okay";
+                        link-frequencies = /bits/ 64 <377487000>;
                         csis-hs-settle = <7>;
                         csis-clk-settle = <2>;
                         csis-wclk;
@@ -135,7 +141,7 @@
                 };
                 mipi1_sensor_ep: endpoint2 {
                         reg = <1>;
-                        remote-endpoint = <&basler_camera_mipi1_ep>;
+                        remote-endpoint = <&addicmos_ep>;
                 };
         };
 };
@@ -240,6 +246,20 @@
 			>;
 		};
 
+		pinctrl_ecspi2: ecspi2grp {
+			fsl,pins = <
+				MX8MM_IOMUXC_ECSPI2_SS0_GPIO5_IO13		0x19 /* CS: spi chip-select */
+				MX8MM_IOMUXC_ECSPI2_SCLK_ECSPI2_SCLK		0x19 /* SCK: spi clock */
+				MX8MM_IOMUXC_ECSPI2_MISO_ECSPI2_MISO		0x19 /* MISO: spi master-in-slave-out */
+				MX8MM_IOMUXC_ECSPI2_MOSI_ECSPI2_MOSI		0x19 /* MOSI: spi master-out-slave-in */
+			>;
+		};
+
+		pinctrl_ecspi2_gpio: ecspi2_gpio_grp {
+			fsl,pins = <
+				MX8MM_IOMUXC_ECSPI2_MOSI_GPIO5_IO11		0x100 /* MOSI pin as GPIO with pull-up */
+			>;
+		};
 
 		pinctrl_pcie0: pcie0grp {
 			fsl,pins = <
@@ -327,8 +347,6 @@
 			fsl,pins = <
 				MX8MM_IOMUXC_UART1_RXD_UART1_DCE_RX	0x140
 				MX8MM_IOMUXC_UART1_TXD_UART1_DCE_TX	0x140
-				MX8MM_IOMUXC_UART3_RXD_UART1_DCE_CTS_B	0x140
-				MX8MM_IOMUXC_UART3_TXD_UART1_DCE_RTS_B	0x140
 			>;
 		};
 
@@ -491,6 +509,13 @@
 				MX8MM_IOMUXC_GPIO1_IO11_USB2_OTG_ID		0x19
 			>;
 		};
+
+		pinctrl_gpios: gpiogrp {
+			fsl,pins = <
+				MX8MM_IOMUXC_UART3_RXD_GPIO5_IO26		0x19
+				MX8MM_IOMUXC_UART3_TXD_GPIO5_IO27		0x19
+			>;
+		};
 	};
 };
 
@@ -514,7 +539,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_i2c1>;
 	status = "okay";
-	
+
 	eeprom: eeprom@50{
                 compatible = "st,24c02", "atmel,24c02";
                 reg = <0x50>;
@@ -677,7 +702,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_i2c3>;
 	status = "okay";
-	
+
 	rtc@69 {
                 compatible = "abracon,ab1805";
                 reg = <0x69>;
@@ -703,29 +728,6 @@
                 port {
                         adv7535_from_dsim: endpoint {
                                 remote-endpoint = <&dsim_to_adv7535>;
-                        };
-                };
-        };
-
-	basler_camera_mipi1: basler_camera_mipi@36 {
-                compatible = "basler,basler-camera";
-                reg = <0x36>;
-                status = "okay";
-                pinctrl-names = "default";
-                pinctrl-0 = <&pinctrl_csi_pwn>, <&pinctrl_csi_rst>;
-                clocks = <&xclk>;
-                clock-names = "xclk";
-                reset-gpios = <&gpio1 6 GPIO_ACTIVE_LOW>;
-                powerdown-gpios = <&gpio1 5 GPIO_ACTIVE_HIGH>;
-                port {
-                        basler_camera_mipi1_ep: endpoint {
-                                remote-endpoint = <&mipi1_sensor_ep>;
-
-                                /* IMPORTANT: The following three entries needs to be held
-                                 * in sync with the information stored in the csi1_mipi_ep node */
-                                data-lanes = <1 2 3 4>;
-                                clock-lanes = <0>;
-                                link-frequencies = /bits/ 64 <248000000>;
                         };
                 };
         };
@@ -948,4 +950,32 @@
 
 &vpu_h1 {
 	status = "okay";
+};
+
+/* mikrobus spi */
+&ecspi2 {
+	cs-gpios = <&gpio5 13 GPIO_ACTIVE_HIGH>;
+	status = "okay";
+	spi-cpol;
+	spi-cpha;
+
+	addicmos@0 {
+		compatible = "adi,addicmos";
+		reg = <0x0>;
+		spi-max-frequency = <16000000>;
+
+		reset-gpios = <&gpio5 27 GPIO_ACTIVE_HIGH>;
+		pinctrl-names = "spi", "gpio";
+		pinctrl-0 = <&pinctrl_ecspi2>;
+		pinctrl-1 = <&pinctrl_ecspi2_gpio>;
+
+		port {
+			addicmos_ep: endpoint {
+				remote-endpoint = <&mipi1_sensor_ep>;
+				data-lanes = <1 2 3 4>;
+				clock-lanes = <0>;
+				link-frequencies = /bits/ 64 <377487000>;
+			};
+		};
+	};
 };
