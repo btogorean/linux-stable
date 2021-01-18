@@ -105,6 +105,14 @@ struct mxc_isi_fmt mxc_isi_out_formats[] = {
 		.memplanes	= 1,
 		.colplanes	= 1,
 		.mbus_code	= MEDIA_BUS_FMT_RGB888_1X24,
+	}, {
+		.name		= "RAW12",
+		.fourcc		= V4L2_PIX_FMT_Y12,
+		.depth		= { 16 },
+		.color		= MXC_ISI_OUT_FMT_RAW12,
+		.memplanes	= 1,
+		.colplanes	= 1,
+		.mbus_code	= MEDIA_BUS_FMT_Y12_1X12,
 	}
 };
 
@@ -122,6 +130,12 @@ struct mxc_isi_fmt mxc_isi_src_formats[] = {
 		.name		= "YUV32 (X-Y-U-V)",
 		.fourcc		= V4L2_PIX_FMT_YUV32,
 		.depth		= { 32 },
+		.memplanes	= 1,
+		.colplanes	= 1,
+	}, {
+		.name		= "Y12",
+		.fourcc		= V4L2_PIX_FMT_Y12,
+		.depth		= { 16 },
 		.memplanes	= 1,
 		.colplanes	= 1,
 	}
@@ -169,8 +183,8 @@ struct mxc_isi_fmt *mxc_isi_get_src_fmt(struct v4l2_subdev_format *sd_fmt)
 	    sd_fmt->format.code == MEDIA_BUS_FMT_UYVY8_2X8 ||
 	    sd_fmt->format.code == MEDIA_BUS_FMT_YUYV8_2X8)
 		index = 1;
-	else
-		index = 0;
+	else if (sd_fmt->format.code == MEDIA_BUS_FMT_Y12_1X12)
+		index = 2;
 	return &mxc_isi_src_formats[index];
 }
 

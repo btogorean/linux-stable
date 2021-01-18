@@ -880,7 +880,7 @@ static int register_sensor_entities(struct mxc_md *mxc_md)
 	struct device_node *parent = mxc_md->pdev->dev.of_node;
 	struct device_node *node, *ep, *rem;
 	struct v4l2_fwnode_endpoint endpoint;
-	struct i2c_client *client;
+	struct spi_device *client;
 	int index = 0;
 	int ret;
 
@@ -933,10 +933,10 @@ static int register_sensor_entities(struct mxc_md *mxc_md)
 		/*
 		 * Need to wait sensor driver probed for the first time
 		 */
-		client = of_find_i2c_device_by_node(rem);
+		client = of_find_spi_device_by_node(rem);
 		if (!client) {
 			v4l2_info(&mxc_md->v4l2_dev,
-				  "Can't find i2c client device for %s\n",
+				  "Can't find spi client device for %s\n",
 				  of_node_full_name(rem));
 			return -EPROBE_DEFER;
 		}
