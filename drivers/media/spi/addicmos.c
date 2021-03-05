@@ -155,14 +155,14 @@ static const s64 link_freq_tbl[] = {
 /* Elements of the structure must be ordered ascending by width & height */
 static const struct addicmos_mode_info addicmos_mode_info_data[] = {
 	{
-		.width = 32768,
-		.height = 32,
+		.width = 4096,
+		.height = 256,
 		.pixel_rate = 488000000,
 		.link_freq_idx = 0 /* an index in link_freq_tbl[] */
 	},
 	{
-		.width = 32768,
-		.height = 48,
+		.width = 4096,
+		.height = 384,
 		.pixel_rate = 488000000,
 		.link_freq_idx = 1 /* an index in link_freq_tbl[] */
 	},
@@ -272,6 +272,7 @@ static int addicmos_power_off(struct device *dev)
 		dev_err(addicmos->dev, "Could not set power down register\n");
 
 	for (i = 0; i < 5; i ++) {
+		msleep_interruptible(100);
 		regmap_read(addicmos->regmap, 0xC, &read_val);
 		if (read_val == 0x0) {
 			return 0;
@@ -632,11 +633,11 @@ static int addicmos_spi_bus_init(struct v4l2_subdev *sd)
 	if (ret < 0)
 		return ret;
 
-	gpiod_set_value_cansleep(addicmos->rst_gpio, 0);
+	gpiod_set_value_cansleep(addicmos->rst_gpio, 1);
 
 	msleep(500);
 
-	gpiod_set_value_cansleep(addicmos->rst_gpio, 1);
+	gpiod_set_value_cansleep(addicmos->rst_gpio, 0);
 
 	/* Set SPI pins to SPI mode */
 	ret = pinctrl_select_state(addicmos->pinctrl, addicmos->pins_spi);
