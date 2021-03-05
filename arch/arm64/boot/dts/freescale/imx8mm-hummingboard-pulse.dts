@@ -118,9 +118,9 @@
                          */
                         data-lanes = <4>;
                         clock-lanes = <0>;
-                        link-frequencies = /bits/ 64 <377487000>;
-                        csis-hs-settle = <7>;
-                        csis-clk-settle = <2>;
+                        link-frequencies = /bits/ 64 <732000000>;
+                        csis-hs-settle = <32>;
+                        csis-clk-settle = <0>;
                         csis-wclk;
                 };
         };
@@ -964,7 +964,7 @@
 		reg = <0x0>;
 		spi-max-frequency = <16000000>;
 
-		reset-gpios = <&gpio5 27 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio5 27 GPIO_ACTIVE_LOW>;
 		pinctrl-names = "spi", "gpio";
 		pinctrl-0 = <&pinctrl_ecspi2>;
 		pinctrl-1 = <&pinctrl_ecspi2_gpio>;
@@ -974,7 +974,7 @@
 				remote-endpoint = <&mipi1_sensor_ep>;
 				data-lanes = <1 2 3 4>;
 				clock-lanes = <0>;
-				link-frequencies = /bits/ 64 <377487000>;
+				link-frequencies = /bits/ 64 <732000000>;
 			};
 		};
 	};
